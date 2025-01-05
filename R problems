@@ -1,0 +1,124 @@
+nashville <-read.csv("C:/Users/GIS-RS-LAB/Desktop/Rstudio Nusrat/PCA/NashvilleCarbonates.csv",header=TRUE, row.names=1, sep=',')
+geochem <- nashville[ , 2:9]
+
+summary(nashville)
+head(nashville)
+
+summary(geochem)
+par(mfrow=c(4,2))
+
+hist(geochem$StratPosition)
+hist(geochem$d13C)
+hist(geochem$d18O)
+hist(geochem$Al)
+hist(geochem$Ca)
+hist(geochem$Fe)
+hist(geochem$Mg)
+hist(geochem$Mn)
+hist(geochem$Si)
+
+install.packages("MASS")
+library("MASS")
+geochem[ , 3:6] <- log10(geochem[ , 3:6])
+
+pca <- prcomp(geochem, scale.=TRUE)
+variance <- (pca$sdev)^2
+loadings <- pca$rotation
+ rownames(loadings) <- colnames(geochem)
+ scores <- pca$x
+
+####
+
+#Reservoir Volume 
+V = 1.44e7 
+#Mean depth of water 
+D = 5 
+#Sediment diameter 
+ds = 0.00001 
+#Water density 
+wd= 1000 
+#Sediment Density 
+sd= 2650 
+Viscosity = 0.001 
+#River discharge 
+Qi = 400 
+#Initial sediment concentration 
+C0 = 0.265 
+#Average sediment concentration in the flood water Ci = 20 
+#Duration of flood 
+tmax = 3*24*60*60 
+#settling velocity 
+Ws = (9.8*(sd-wd)*ds^2)/(18*0.001) 
+Ws 
+# flashing time 
+Tf = V/Qi 
+Tf 
+#settling time 
+Ts = D/Ws 
+Ts 
+B = (1/Tf)+(1/Ts) 
+B 
+#equilibrium concentration 
+Ce = Ci/(Tf*B) 
+Ce 
+#analytical solution 
+t <- seq(0, tmax, length.out = 1000) 
+C_ana = Ce -(Ce-C0)*exp(-B*t) 
+C_ana 
+plot(t, C_ana, col = "red") 
+# Numerical solution 
+n_steps = 1000 
+dt = tmax / n_steps 
+t_numerical = numeric(n_steps)
+C_numerical = numeric(n_steps) 
+t_numerical[1]= 0 
+C_numerical[1] = C0 
+for (i in 2:n_steps) { 
+t_numerical[i] = t_numerical[i - 1] + dt 
+C_numerical[i] = ((t_numerical[i] - t_numerical[i - 1]) * B * Ce + C_numerical[i - 1]) / (1 + (t_numerical[i] - t_numerical[i - 1]) * B) 
+} 
+plot(t, C_ana, type = 'l', col = 'blue', xlab = 'Time (S)', ylab = 'Sediment Concentration', main = 'Analytical Solution vs Numerical Solution for Sediment Concentration over Time') lines(t_numerical, C_numerical, col = 'red') 
+legend("topright", legend=c("Analytical", "Numerical"), fill =c("blue", "red"), lty=1) 
+diff = C_ana- C_numerical 
+diff 
+plot(t, diff) 
+#trap efficiency 
+TE = (Tf/(Tf+Ts))*(1-((1-(C0/Ce))/B*tmax)*(1-exp(B*tmax))) 
+TE 
+TE_numerical = (Tf/(Tf+Ts))*(1-((1-(C0/Ce))/(B*tmax))*(1-exp(-B*tmax))) TE_numerical 
+Sir here I found some issues with TE for both numerical and analytical solution.
+
+#####৳
+
+h1 = 31;
+h2 = 27;
+k = 1.2
+R = 1.8;
+E = 1.3;
+r = (R-E)/365;
+L = 1500;
+t = k*35;
+t
+
+d = (L/2) - (k/R)*((h1*h1 - h2*h2)/(2*L))
+d
+
+hmax =(h1*h1 - (h1*h1 - h2*h2)*(d/L)+(L-d)*(r*d/k))^0.5
+hmax
+qxriver = (k*(h1*h1 - h2* h2)*k/(2*L) - (r*(L/2)))/1000
+qxriver
+qxcanal = (k*(h1*h1 - h2* h2)*k/(2*L) - (r*(L/2- L)))/1000
+qxcanal
+
+x = seq(0, L, by = 10)
+H = sqrt(h1*h1 - (h1*h1 - h2*h2)*(x/L)+(L-x)*(r*x/k))
+plot(x, H, col = 'red')
+h1_1 = h1 - h2
+hc =h2+ (h1_1 - h1_1*(x/L)+(r/(2*t))*(L-x)*x)
+hc
+lines(x, hc, col = 'blue')
+legend("topright", legend = c("H for unconfined", "hc for confined"), fill = c("red", "blue"))
+
+hdiff = 100*((H - hc)/(h1+h2)/2)
+hdiff
+plot(x, hdiff, main="Difference of the heads for both confind and unconfined")
